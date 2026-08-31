@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>众生手札｜情侣恋爱日记</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f7f3ea;
+      --paper-dark: #ebe4d4;
+      --ink: #2c3a54;
+      --ink-soft: #586a88;
+      --accent-blue: #6d8cb8;
+      --accent-blue-soft: #a1b5d8;
+      --gold: #c9b084;
+      --gold-soft: #e8d9b8;
+      --border: #d4c9b8;
+      --border-soft: #e9dfcf;
+      --shadow: 0 6px 18px rgba(44, 58, 84, 0.08);
+      --shadow-hover: 0 12px 28px rgba(44, 58, 84, 0.14);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: "Noto Sans SC", system-ui, -apple-system, sans-serif;
+      background-color: var(--paper);
+      background-image:
+        radial-gradient(circle at 16% 24%, rgba(109, 140, 184, 0.045) 0, transparent 24%),
+        radial-gradient(circle at 84% 76%, rgba(109, 140, 184, 0.035) 0, transparent 26%),
+        repeating-linear-gradient(45deg, rgba(212, 201, 184, 0.04) 0 1px, transparent 1px 18px),
+        repeating-linear-gradient(-45deg, rgba(212, 201, 184, 0.04) 0 1px, transparent 1px 18px);
+      color: var(--ink);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      font-family: "Noto Serif SC", serif;
+      font-weight: 600;
+      color: var(--ink);
+    }
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+    .container {
+      width: min(1280px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 24px 0 48px;
+    }
+    .topbar {
+      width: 100%;
+      height: 52px;
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+    }
+    .topbar-title {
+      font-family: "Noto Serif SC", serif;
+      font-size: 18px;
+      letter-spacing: 1px;
+      color: var(--ink);
+    }
+    .topbar-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .btn {
+      border: 1px solid var(--accent-blue);
+      background: rgba(255, 255, 255, 0.56);
+      color: var(--ink);
+      padding: 10px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.22s ease;
+      font-family: inherit;
+    }
+    .btn:hover {
+      background: var(--accent-blue);
+      color: white;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(109, 140, 184, 0.25);
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #5a7fb8;
+    }
+    .btn-gold {
+      border-color: var(--gold);
+      background: rgba(201, 176, 132, 0.18);
+      color: #8c7044;
+    }
+    .btn-gold:hover {
+      background: var(--gold);
+      color: white;
+    }
+    .layout {
+      display: flex;
+      gap: 24px;
+      margin-top: 24px;
+    }
+    .sidebar {
+      width: 220px;
+      flex-shrink: 0;
+    }
+    .sidebar-card {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .sidebar-nav button {
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      background: transparent;
+      color: var(--ink);
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      font-size: 14px;
+      cursor: pointer;
+      transition: 0.2s ease;
+    }
+    .sidebar-nav button:hover,
+    .sidebar-nav button.active {
+      background: rgba(109, 140, 184, 0.12);
+      border-color: var(--accent-blue-soft);
+      color: var(--accent-blue);
+    }
+    .main {
+      flex: 1;
+      min-width: 0;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 22px;
+      margin-bottom: 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+      transition: 0.25s ease;
+    }
+    .card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+    .card-title {
+      font-size: 20px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title small {
+      font-size: 12px;
+      color: var(--ink-soft);
+      font-weight: 400;
+      font-family: "Noto Sans SC", sans-serif;
+    }
+    .form-row {
+      margin-bottom: 16px;
+    }
+    .form-row label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--ink-soft);
+      font-size: 13px;
+    }
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.72);
+      padding: 12px 14px;
+      color: var(--ink);
+      font-size: 15px;
+      font-family: inherit;
+      transition: 0.2s ease;
+    }
+    input:focus,
+    textarea:focus,
+    select:focus {
+      outline: none;
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 3px rgba(109, 140, 184, 0.12);
+    }
+    textarea {
+      min-height: 130px;
+      resize: vertical;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+    }
+    .stat-card {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+    .stat-card .label {
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: "Noto Serif SC", serif;
+      margin-top: 4px;
+    }
+    .entry-card {
+      background: rgba(255, 255, 255, 0.76);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow);
+      transition: 0.25s ease;
+    }
+    .entry-card:hover {
+      box-shadow: var(--shadow-hover);
+      transform: translateY(-2px);
+    }
+    .entry-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .entry-title {
+      font-size: 18px;
+      font-family: "Noto Serif SC", serif;
+    }
+    .entry-meta {
+      font-size: 12px;
+      color: var(--ink-soft);
+      margin-top: 4px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      border: 1px solid var(--accent-blue-soft);
+      background: rgba(161, 181, 216, 0.14);
+      color: var(--accent-blue);
+    }
+    .badge.gold {
+      border-color: var(--gold);
+      background: rgba(201, 176, 132, 0.14);
+      color: #8c7044;
+    }
+    .progress {
+      height: 10px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #fff;
+      margin: 6px 0 12px;
+    }
+    .progress-bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-blue), #889bc7);
+      transition: width 0.4s ease;
+    }
+    .divider {
+      height: 1px;
+      background: repeating-linear-gradient(90deg, var(--border) 0 4px, transparent 4px 8px);
+      margin: 18px 0;
+    }
+    .stamp {
+      display: inline-block;
+      border: 1px solid var(--gold);
+      color: #8c7044;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.85;
+    }
+    .note {
+      font-size: 12px;
+      color: var(--ink-soft);
+      margin-top: 8px;
+    }
+    .hidden {
+      display: none !important;
+    }
+    .text-center {
+      text-align: center;
+    }
+    .empty {
+      padding: 32px;
+      text-align: center;
+      color: var(--ink-soft);
+      font-size: 14px;
+    }
+    .loading-box{
+      padding:60px;text-align:center;color:var(--ink-soft);
+    }
+    @media (max-width: 900px) {
+      .layout {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+      }
+      .grid,
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .topbar {
+        flex-direction: column;
+        height: auto;
+        gap: 12px;
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="topbar-title">众生手札</div>
+    <div class="topbar-actions">
+      <template v-if="!isLoading">
+        <template v-if="!user">
+          <button class="btn" @click="showLogin = true">登入卷宗</button>
+          <button class="btn btn-primary" @click="showRegister = true">建立档案</button>
+        </template>
+        <template v-if="user">
+          <button class="btn" @click="logout">退出卷宗</button>
+        </template>
+      </template>
+    </div>
+  </div>
+  <div class="container">
+    <div v-if="isLoading" class="loading-box">
+      正在初始化卷宗会话，请稍候……
+    </div>
+
+    <template v-if="!isLoading && !user">
+      <div class="card" style="max-width: 520px; margin: 48px auto;">
+        <h2 class="card-title">欢迎回来，观测者</h2>
+        <p class="note">众生手札记录情侣契约、生灵日常与星尘账目。请先登入或建立新档案。</p>
+        <div v-if="showLogin">
+          <div class="form-row">
+            <label>邮箱账号</label>
+            <input v-model="loginForm.email" placeholder="请输入邮箱" />
+          </div>
+          <div class="form-row">
+            <label>卷宗密钥</label>
+            <input v-model="loginForm.password" type="password" placeholder="请输入密码" />
+          </div>
+          <button class="btn btn-primary" @click="login">登入</button>
+          <button class="btn" @click="showLogin = false">关闭</button>
+        </div>
+        <div v-if="showRegister">
+          <div class="form-row">
+            <label>邮箱账号</label>
+            <input v-model="regForm.email" placeholder="请输入邮箱" />
+          </div>
+          <div class="form-row">
+            <label>卷宗密钥</label>
+            <input v-model="regForm.password" type="password" placeholder="请输入密码" />
+          </div>
+          <button class="btn btn-primary" @click="register">注册</button>
+          <button class="btn" @click="showRegister = false">关闭</button>
+        </div>
+      </div>
+    </template>
+
+    <template v-if="!isLoading && user">
+      <div class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-card">
+            <div class="text-center">
+              <h3>{{ profile.nickname || "观测者" }}</h3>
+              <p class="note">卷宗编号：{{ user.id.slice(0, 8).toUpperCase() }}</p>
+            </div>
+            <div class="divider"></div>
+            <div v-if="couple">
+              <div class="stat-card" style="margin-bottom: 12px;">
+                <div class="label">契约名称</div>
+                <div class="value" style="font-size: 18px;">{{ couple.couple_name }}</div>
+              </div>
+              <div class="stat-card" style="margin-bottom: 12px;">
+                <div class="label">圣历相恋时长</div>
+                <div class="value">{{ loveDay }} 日</div>
+              </div>
+              <div class="stat-card">
+                <div class="label">星尘余额</div>
+                <div class="value">{{ wallet?.star_coin || 0 }} ✦</div>
+              </div>
+            </div>
+            <div class="divider"></div>
+            <nav class="sidebar-nav">
+              <button :class="{ active: page === 'home' }" @click="page = 'home'">圣堂首页</button>
+              <button :class="{ active: page === 'diary' }" @click="page = 'diary'">众生手札</button>
+              <button :class="{ active: page === 'pet' }" @click="page = 'pet'">生灵观测</button>
+              <button :class="{ active: page === 'shop' }" @click="page = 'shop'">工坊物资</button>
+              <button :class="{ active: page === 'setting' }" @click="page = 'setting'">档案设置</button>
+            </nav>
+          </div>
+        </aside>
+        <main class="main">
+          <div v-if="page === 'home'">
+            <div class="card">
+              <h2 class="card-title">圣堂首页 <small>总览卷宗</small></h2>
+              <div v-if="!couple">
+                <p class="note" style="margin-bottom: 16px;">尚未缔结情侣观测契约。创建契约后，可通过编号邀请另一方加入。</p>
+                <button class="btn btn-primary" @click="createCouple">创建契约</button>
+                <div class="form-row" style="margin-top: 16px;">
+                  <label>输入契约编号加入情侣观测</label>
+                  <input v-model="joinCode" placeholder="例如：A7F3‑K2D9" />
+                  <button class="btn" style="margin-top: 8px;" @click="joinCouple">缔结契约</button>
+                </div>
+              </div>
+              <div v-if="couple">
+                <div class="grid‑3" style="margin‑bottom: 18px;">
+                  <div class="stat‑card">
+                    <div class="label">圣历相恋时长</div>
+                    <div class="value">{{ loveDay }} 日</div>
+                  </div>
+                  <div class="stat‑card">
+                    <div class="label">星尘余额</div>
+                    <div class="value">{{ wallet?.star_coin || 0 }} ✦</div>
+                  </div>
+                  <div class="stat‑card">
+                    <div class="label">手札记录</div>
+                    <div class="value">{{ diaryList.length }}</div>
+                  </div>
+                </div>
+                <div class="divider"></div>
+                <h3 style="margin‑bottom: 12px;">快捷观测</h3>
+                <div class="grid">
+                  <button class="btn" style="padding: 14px; text‑align: left;" @click="page = 'diary'">撰写众生手札</button>
+                  <button class="btn" style="padding: 14px; text‑align: left;" @click="page = 'pet'">记录生灵日常</button>
+                  <button class="btn" style="padding: 14px; text‑align: left;" @click="page = 'shop'">查看工坊物资</button>
+                  <button class="btn" style="padding: 14px; text‑align: left;" @click="page = 'setting'">修改档案设置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-if="page === 'diary'">
+            <div class="card">
+              <h2 class="card‑title">众生手札 <small>记录此间日常与心绪</small></h2>
+              <div class="form‑row">
+                <label>手札标题</label>
+                <input v‑model="diaryForm.title" placeholder="输入标题" />
+              </div>
+              <div class="form‑row">
+                <label>手札内容</label>
+                <textarea v‑model="diaryForm.content" placeholder="记录此间的日常与心绪"></textarea>
+              </div>
+              <div class="form‑row">
+                <label>观测权限</label>
+                <select v‑model="diaryForm.visibility">
+                  <option value="private">仅契约双方可见</option>
+                  <option value="friend">允许友方契约观测</option>
+                  <option value="public">公开观测</option>
+                </select>
+              </div>
+              <button class="btn btn‑primary" @click="postDiary">提交手札（获取星尘）</button>
+            </div>
+            <div v‑if="diaryList.length === 0" class="empty">
+              暂无手札记录
+            </div>
+            <div v‑for="d in diaryList" :key="d.id" class="entry‑card">
+              <div class="entry‑header">
+                <div>
+                  <div class="entry‑title">{{ d.title }}</div>
+                  <div class="entry‑meta">{{ new Date(d.created_at).toLocaleString() }}</div>
+                </div>
+                <span class="badge">{{ d.visibility }}</span>
+              </div>
+              <p>{{ d.content }}</p>
+            </div>
+          </div>
+          <div v‑if="page === 'pet'">
+            <div class="card">
+              <h2 class="card‑title">生灵观测 <small>实体与虚拟生灵档案</small></h2>
+              <div class="tab" style="display: flex; gap: 8px; margin‑bottom: 16px;">
+                <button class="btn" :class="{ active: petTab === 'real' }" @click="petTab = 'real'">实体生灵档案</button>
+                <button class="btn" :class="{ active: petTab === 'virtual' }" @click="petTab = 'virtual'">虚拟生灵观测</button>
+                <button class="btn" :class="{ active: petTab === 'post' }" @click="petTab = 'post'">生灵记事</button>
+                <button class="btn" :class="{ active: petTab === 'log' }" @click="petTab = 'log'">养护台账</button>
+              </div>
+              <div v‑if="petTab === 'real'">
+                <div class="form‑row">
+                  <label>生灵名称</label>
+                  <input v‑model="petForm.name" placeholder="例如：年糕" />
+                </div>
+                <div class="form‑row">
+                  <label>物种 / 品种</label>
+                  <input v‑model="petForm.breed" placeholder="例如：猫 / 布偶" />
+                </div>
+                <div class="form‑row">
+                  <label>观测权限</label>
+                  <select v‑model="petForm.visibility">
+                    <option value="private">仅契约双方可见</option>
+                    <option value="friend">允许友方契约观测</option>
+                  </select>
+                </div>
+                <button class="btn btn‑primary" @click="addRealPet">归档保存</button>
+              </div>
+              <div v‑if="petTab === 'virtual'">
+                <div v‑if="virtualPet">
+                  <h3>{{ virtualPet.name }}</h3>
+                  <p class="note">等级：{{ virtualPet.level }}</p>
+                  <div class="form‑row">
+                    <label>饱食度 {{ Math.round(virtualPet.hunger) }}%</label>
+                    <div class="progress"><div class="progress‑bar" :style="{ width: virtualPet.hunger + '%' }"></div></div>
+                  </div>
+                  <div class="form‑row">
+                    <label>洁净度 {{ Math.round(virtualPet.clean) }}%</label>
+                    <div class="progress"><div class="progress‑bar" :style="{ width: virtualPet.clean + '%' }"></div></div>
+                  </div>
+                  <div class="form‑row">
+                    <label>心情 {{ Math.round(virtualPet.mood) }}%</label>
+                    <div class="progress"><div class="progress‑bar" :style="{ width: virtualPet.mood + '%' }"></div></div>
+                  </div>
+                  <div class="form‑row">
+                    <label>健康 {{ Math.round(virtualPet.health) }}%</label>
+                    <div class="progress"><div class="progress‑bar" :style="{ width: virtualPet.health + '%' }"></div></div>
+                  </div>
+                  <button class="btn btn‑gold" @click="useItem">使用背包道具</button>
+                </div>
+                <div v‑if="!virtualPet" class="empty">
+                  暂无虚拟生灵，请前往工坊物资兑换孵化卵
+                </div>
+              </div>
+              <div v‑if="petTab === 'post'">
+                <div class="form‑row">
+                  <label>记录内容</label>
+                  <textarea v‑model="petPostForm.content" placeholder="记录生灵的日常"></textarea>
+                </div>
+                <div class="form‑row">
+                  <label>观测权限</label>
+                  <select v‑model="petPostForm.visibility">
+                    <option value="private">仅契约双方可见</option>
+                    <option value="friend">允许友方契约观测</option>
+                  </select>
+                </div>
+                <button class="btn btn‑primary" @click="postPet">发布记事（获取星尘）</button>
+              </div>
+              <div v‑if="petTab === 'log'">
+                <div class="form‑row">
+                  <label>养护类型</label>
+                  <select v‑model="petLogForm.type">
+                    <option value="feed">喂食</option>
+                    <option value="bath">洗澡</option>
+                    <option value="deworm">驱虫</option>
+                    <option value="vaccine">疫苗</option>
+                    <option value="medic">就医</option>
+                    <option value="expense">开销</option>
+                  </select>
+                </div>
+                <button class="btn btn‑primary" @click="addPetLog">完成打卡（获取星尘）</button>
+              </div>
+            </div>
+            <div v‑if="petTab === 'real' && realPetList.length === 0" class="empty">
+              暂无实体生灵档案
+            </div>
+            <div v‑for="p in realPetList" :key="p.id" class="entry‑card" v‑if="petTab === 'real'">
+              <div class="entry‑title">{{ p.name }}｜{{ p.breed }}</div>
+              <p class="note">状态：{{ p.status }}</p>
+              <span class="badge">{{ p.visibility }}</span>
+            </div>
+          </div>
+          <div v‑if="page === 'shop'">
+            <div class="card">
+              <h2 class="card‑title">工坊物资 <small>消耗星尘兑换生灵物资</small></h2>
+              <div v‑if="shopList.length === 0" class="empty">
+                暂无物资数据
+              </div>
+              <div v‑for="item in shopList" :key="item.id" class="entry‑card">
+                <div class="entry‑header">
+                  <div class="entry‑title">{{ item.name }}</div>
+                  <span class="badge gold">{{ item.price }} ✦</span>
+                </div>
+                <p class="note">{{ item.description }}</p>
+                <button class="btn btn‑gold" @click="buyItem(item)">兑换物资</button>
+              </div>
+            </div>
+          </div>
+          <div v‑if="page === 'setting'">
+            <div class="card">
+              <h2 class="card‑title">档案设置 <small>观测者与契约配置</small></h2>
+              <div class="form‑row">
+                <label>观测者昵称</label>
+                <input v‑model="profile.nickname" placeholder="输入昵称" />
+              </div>
+              <button class="btn btn‑primary" @click="saveProfile">保存档案</button>
+            </div>
+          </div>
+        </main>
+      </div>
+    </template>
+  </div>
+</div>
+<script>
+const { createApp } = Vue
+// ========== 替换成你自己的 Supabase 信息 ==========
+const SUPABASE_URL = "https://yyjsfnmvqchfadtnlnnt.supabase.co"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5anNmbm12cWNoZmFkdG5sbm50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNjE1MzIsImV4cCI6MjEwMzczNzUzMn0._siRJLmQPa7YAdLy7hOgn_wU‑mqym0sUnwvpti0zJso"
+const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+createApp({
+  data() {
+    return {
+      isLoading:true,
+      user: null,
+      showLogin: false,
+      showRegister: false,
+      page: "home",
+      petTab: "real",
+      loginForm: { email: "", password: "" },
+      regForm: { email: "", password: "" },
+      couple: null,
+      wallet: null,
+      loveDay: 0,
+      joinCode: "",
+      profile: { nickname: "" },
+      diaryList: [],
+      diaryForm: { title: "", content: "", visibility: "private" },
+      realPetList: [],
+      virtualPet: null,
+      petForm: { name: "", breed: "", visibility: "private" },
+      petPostForm: { content: "", visibility: "private" },
+      petLogForm: { type: "feed" },
+      shopList: []
+    }
+  },
+  async mounted() {
+    // 兼容刷新页面，主动获取会话
+    const { data } = await supabase.auth.getSession()
+    this.user = data?.session?.user || null
+    this.isLoading=false
+    if(this.user){
+      await this.loadAllData()
+    }
+    supabase.auth.onAuthStateChange((event, session) => {
+      this.user = session?.user || null
+      if (this.user) {
+        this.loadAllData()
+      }
+    })
+  },
+  methods: {
+    async login() {
+      const res = await supabase.auth.signInWithPassword(this.loginForm)
+      if (res.error) alert(res.error.message)
+    },
+    async register() {
+      const res = await supabase.auth.signUp(this.regForm)
+      if (res.error) alert(res.error.message)
+    },
+    async logout() {
+      await supabase.auth.signOut()
+      this.user=null
+      this.couple=null
+    },
+    async loadAllData() {
+      const uid = this.user.id
+      let { data: prof } = await supabase.from("user_profiles").select("*").eq("id", uid).single()
+      if (!prof) {
+        await supabase.from("user_profiles").insert([{ id: uid, nickname: "观测者" }])
+        prof = { nickname: "观测者" }
+      }
+      this.profile = prof
+      const { data: coupleRes } = await supabase.from("couples")
+        .select("*")
+        .or(`partner1_id.eq.${uid},partner2_id.eq.${uid}`)
+      this.couple = coupleRes?.[0] || null
+      if (this.couple) {
+        const start = new Date(this.couple.start_date)
+        const now = new Date()
+        this.loveDay = Math.floor((now - start) / (1000 * 60 * 60 * 24))
+        const { data: wallet } = await supabase.from("coin_wallet")
+          .select("*")
+          .eq("couple_id", this.couple.id)
+          .single()
+        this.wallet = wallet || { star_coin: 0, daily_earn: 0 }
+        const { data: diary } = await supabase.from("diary")
+          .select("*")
+          .eq("couple_id", this.couple.id)
+          .order("created_at", { ascending: false })
+        this.diaryList = diary || []
+        const { data: realPet } = await supabase.from("real_pets")
+          .select("*")
+          .eq("couple_id", this.couple.id)
+        this.realPetList = realPet || []
+        const { data: virtual } = await supabase.from("virtual_pets")
+          .select("*")
+          .eq("couple_id", this.couple.id)
+          .limit(1)
+        this.virtualPet = virtual?.[0] || null
+        const { data: shop } = await supabase.from("shop_items").select("*")
+        this.shopList = shop || []
+        this.petDecayLoop()
+      }
+    },
+    async createCouple() {
+      const uid = this.user.id
+      const { data: newCouple, error } = await supabase.from("couples").insert([{
+        couple_name: "未命名契约",
+        start_date: new Date().toISOString().split("T")[0],
+        partner1_id: uid
+      }]).select().single()
+      if (error) return alert(error.message)
+      await supabase.from("coin_wallet").insert([{ couple_id: newCouple.id }])
+      await this.loadAllData()
+    },
+    async joinCouple() {
+      const uid = this.user.id
+      const { data: couple, error } = await supabase.from("couples")
+        .select("*")
+        .eq("invite_code", this.joinCode)
+        .single()
+      if (error) return alert("契约编号不存在")
+      if (couple.partner2_id) return alert("契约已满员")
+      await supabase.from("couples").update({ partner2_id: uid }).eq("id", couple.id)
+      this.joinCode = ""
+      await this.loadAllData()
+    },
+    async addCoin(amount, reason) {
+      if (!this.couple || !this.wallet) return
+      const MAX_DAY = 200
+      if (this.wallet.daily_earn + amount > MAX_DAY) {
+        alert("今日星尘获取已达上限")
+        return false
+      }
+      await supabase.from("coin_wallet").update({
+        star_coin: this.wallet.star_coin + amount,
+        daily_earn: this.wallet.daily_earn + amount
+      }).eq("couple_id", this.couple.id)
+      await supabase.from("coin_bill").insert([{
+        couple_id: this.couple.id,
+        amount: amount,
+        reason: reason
+      }])
+      await this.loadAllData()
+      return true
+    },
+    async postDiary() {
+      if (!this.couple) return alert("请先缔结契约")
+      await supabase.from("diary").insert([{
+        couple_id: this.couple.id,
+        author_id: this.user.id,
+        title: this.diaryForm.title,
+        content: this.diaryForm.content,
+        visibility: this.diaryForm.visibility
+      }])
+      await this.addCoin(15, "撰写众生手札")
+      this.diaryForm = { title: "", content: "", visibility: "private" }
+      await this.loadAllData()
+    },
+    async addRealPet() {
+      if (!this.couple) return alert("请先缔结契约")
+      await supabase.from("real_pets").insert([{
+        couple_id: this.couple.id,
+        name: this.petForm.name,
+        breed: this.petForm.breed,
+        visibility: this.petForm.visibility
+      }])
+      this.petForm = { name: "", breed: "", visibility: "private" }
+      await this.loadAllData()
+    },
+    async postPet() {
+      if (!this.couple) return alert("请先缔结契约")
+      await supabase.from("pet_posts").insert([{
+        couple_id: this.couple.id,
+        author_id: this.user.id,
+        content: this.petPostForm.content,
+        visibility: this.petPostForm.visibility
+      }])
+      await this.addCoin(12, "生灵记事记录")
+      this.petPostForm.content = ""
+      await this.loadAllData()
+    },
+    async addPetLog() {
+      if (!this.couple) return alert("请先缔结契约")
+      await supabase.from("pet_log").insert([{
+        couple_id: this.couple.id,
+        type: this.petLogForm.type,
+        note: "手动观测打卡"
+      }])
+      await this.addCoin(10, "养护观测台账打卡")
+      await this.loadAllData()
+    },
+    async buyItem(item) {
+      if (!this.couple || !this.wallet) return
+      if (this.wallet.star_coin < item.price) return alert("星尘不足")
+      await supabase.from("coin_wallet").update({
+        star_coin: this.wallet.star_coin - item.price
+      }).eq("couple_id", this.couple.id)
+      await supabase.from("coin_bill").insert([{
+        couple_id: this.couple.id,
+        amount: -item.price,
+        reason: `兑换物资：${item.name}`
+      }])
+      await supabase.from("pet_bag").insert([{
+        couple_id: this.couple.id,
+        item_id: item.id,
+        count: 1
+      }])
+      await this.loadAllData()
+    },
+    async useItem() {
+      alert("道具使用逻辑待完善")
+    },
+    async saveProfile() {
+      await supabase.from("user_profiles").update({
+        nickname: this.profile.nickname
+      }).eq("id", this.user.id)
+      alert("档案已保存")
+    },
+    petDecayLoop() {
+      if (!this.virtualPet) return
+      setInterval(async () => {
+        let hp = this.virtualPet
+        hp.hunger = Math.max(0, hp.hunger - 0.3)
+        hp.cl
