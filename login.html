@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>众生行记｜登入卷宗</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --paper: #f7f3ea;
+      --paper-dark: #ebe4d4;
+      --ink: #2c3a54;
+      --ink-soft: #586a88;
+      --accent-blue: #6d8cb8;
+      --accent-blue-soft: #a1b5d8;
+      --gold: #c9b084;
+      --gold-soft: #e8d9b8;
+      --border: #d4c9b8;
+      --border-soft: #e9dfcf;
+      --shadow: 0 6px 18px rgba(44, 58, 84, 0.08);
+      --shadow-hover: 0 12px 28px rgba(44, 58, 84, 0.14);
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+    * {box-sizing: border-box;margin:0;padding:0;}
+    body{
+      font-family:"Noto Sans SC",system-ui,sans-serif;
+      background-color:var(--paper);
+      background-image:
+        radial-gradient(circle at 16% 24%, rgba(109,140,184,0.045) 0,transparent 24%),
+        radial-gradient(circle at 84% 76%, rgba(109,140,184,0.035) 0,transparent 26%),
+        repeating-linear-gradient(45deg,rgba(212,201,184,0.04) 0 1px,transparent 1px 18px),
+        repeating-linear-gradient(-45deg,rgba(212,201,184,0.04) 0 1px,transparent 1px 18px);
+      color:var(--ink);
+      min-height:100vh;
+      display:flex;align-items:center;justify-content:center;
+      padding:20px;
+    }
+    h1,h2,h3{font-family:"Noto Serif SC",serif;font-weight:600;}
+    .wrap{width:min(520px,100%);}
+    .card{
+      background:rgba(255,255,255,0.76);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:28px 24px;
+      box-shadow:var(--shadow);
+    }
+    .stamp{
+      display:inline-block;
+      border:1px solid var(--gold);
+      color:#8c7044;
+      padding:6px 12px;
+      border-radius:8px;
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:1px;
+      margin-bottom:16px;
+    }
+    .form-row{margin-bottom:16px;}
+    label{display:block;margin-bottom:6px;font-size:13px;color:var(--ink-soft);}
+    input{
+      width:100%;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      background:rgba(255,255,255,0.72);
+      padding:12px 14px;
+      font-size:15px;
+      font-family:inherit;
+    }
+    input:focus{outline:none;border-color:var(--accent-blue);box-shadow:0 0 0 3px rgba(109,140,184,0.12);}
+    .btn{
+      border:1px solid var(--accent-blue);
+      background:rgba(255,255,255,0.56);
+      color:var(--ink);
+      padding:10px 16px;
+      border-radius:var(--radius-sm);
+      cursor:pointer;
+      font-size:14px;
+      transition:0.22s;
+    }
+    .btn-primary{background:var(--accent-blue);color:white;}
+    .btn:hover{background:var(--accent-blue);color:white;transform:translateY(-1px);}
+    .btn-group{display:flex;gap:10px;margin-top:20px;}
+    .tab-bar{display:flex;gap:8px;margin-bottom:20px;}
+    .log-toggle{margin-top:24px;font-size:13px;color:var(--ink-soft);cursor:pointer;user-select:none;}
+    .log-box{
+      margin-top:8px;
+      background:#fff;
+      border:1px solid var(--border);
+      border-radius:var(--radius-sm);
+      padding:10px;
+      font-family:monospace;font-size:12px;
+      max-height:0;overflow:hidden;opacity:0;transition:0.3s;
+    }
+    .log-box.open{max-height:220px;opacity:1;overflow-y:auto;}
+    .log-line{padding:3px 0;border-bottom:1px dashed var(--border-soft);}
+    .log-err{color:#b33838;}
+    .log-ok{color:#2b7038;}
+    .log-warn{color:#b88b2e;}
+    .toast{
+      position:fixed;bottom:30px;left:50%;transform:translateX(-50%);
+      background:var(--accent-blue);color:white;
+      padding:10px 20px;border-radius:8px;
+      box-shadow:var(--shadow-hover);
+      opacity:0;pointer-events:none;transition:0.3s;z-index:99;
+    }
+    .toast.show{opacity:1;pointer-events:auto;}
+    .toast.err{background:#b33838;}
+    .note{font-size:12px;color:var(--ink-soft);margin-top:10px;}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <span class="stamp">卷宗入口</span>
+    <h2>欢迎回来，观测者</h2>
+    <p class="note" style="margin-bottom:20px;">众生行记，记录情侣契约、生灵日常与星尘账目</p>
+
+    <div class="tab-bar">
+      <button class="btn btn-primary" id="tabLogin">登入卷宗</button>
+      <button class="btn" id="tabReg">建立档案</button>
+    </div>
+
+    <div id="panelLogin">
+      <div class="form-row">
+        <label>联络邮箱</label>
+        <input type="email" id="loginEmail" placeholder="输入注册邮箱">
+      </div>
+      <div class="form-row">
+        <label>卷宗密钥</label>
+        <input type="password" id="loginPwd" placeholder="输入密码">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btnLogin">确认登入</button>
+      </div>
+    </div>
+
+    <div id="panelReg" style="display:none;">
+      <div class="form-row">
+        <label>联络邮箱</label>
+        <input type="email" id="regEmail" placeholder="输入邮箱">
+      </div>
+      <div class="form-row">
+        <label>卷宗密钥</label>
+        <input type="password" id="regPwd" placeholder="设置你的密码">
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="btnReg">建立新档案</button>
+      </div>
+    </div>
+
+    <div class="log-toggle" id="logToggle">▶ 系统调试日志</div>
+    <div class="log-box" id="logBox"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = "https://yyjsfnmvqchfadtnlnnt.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl5anNmbm12cWNoZmFkdG5sbm50Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODgxNjE1MzIsImV4cCI6MjEwMzczNzUzMn0._siRJLmQPa7YAdLy7hOgn_wU-mqym0sUnwvpti0zJso";
+const STORAGE_KEY = "zsxj-auth";
+let supabase = null;
+
+// toast
+const toastEl = document.getElementById('toast');
+function showToast(msg,isErr=false){
+  toastEl.textContent=msg;
+  toastEl.className='toast '+(isErr?'err':'show');
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t=setTimeout(()=>toastEl.classList.remove('show'),3200);
+}
+
+// log
+const logBox=document.getElementById('logBox');
+const logToggle=document.getElementById('logToggle');
+let logOpen=false;
+logToggle.onclick=()=>{
+  logOpen=!logOpen;
+  logBox.classList.toggle('open',logOpen);
+}
+function log(msg,type="info"){
+  const d=new Date().toLocaleTimeString();
+  const div=document.createElement('div');
+  div.className="log-line log-"+type;
+  div.textContent=`[${d}] ${msg}`;
+  logBox.appendChild(div);
+  logBox.scrollTop=logBox.scrollHeight;
+  if(!logOpen){ logOpen=true; logBox.classList.add('open'); }
+}
+
+// tab切换
+const panelLogin=document.getElementById('panelLogin');
+const panelReg=document.getElementById('panelReg');
+document.getElementById('tabLogin').onclick=()=>{
+  panelLogin.style.display='block';panelReg.style.display='none';
+  document.getElementById('tabLogin').classList.add('btn-primary');
+  document.getElementById('tabReg').classList.remove('btn-primary');
+}
+document.getElementById('tabReg').onclick=()=>{
+  panelLogin.style.display='none';panelReg.style.display='block';
+  document.getElementById('tabReg').classList.add('btn-primary');
+  document.getElementById('tabLogin').classList.remove('btn-primary');
+}
+
+async function initSdk(){
+  return new Promise(resolve=>{
+    let script=document.createElement('script');
+    script.src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+    script.onload=()=>{
+      supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:STORAGE_KEY}});
+      log("SDK主源加载完成","ok");
+      resolve(true);
+    }
+    script.onerror=()=>{
+      log("主CDN失败，切换备用源","warn");
+      let s2=document.createElement('script');
+      s2.src="https://unpkg.com/@supabase/supabase-js@2";
+      s2.onload=()=>{
+        supabase=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:STORAGE_KEY}});
+        log("备用SDK加载完成","ok");
+        resolve(true);
+      }
+      s2.onerror=()=>{ log("全部CDN加载失败","err"); resolve(false); }
+      document.head.appendChild(s2);
+    }
+    document.head.appendChild(script);
+  })
+}
+
+async function checkAlreadyLogin(){
+  if(!supabase) return;
+  const {data}=await supabase.auth.getSession();
+  if(data?.session){
+    log("检测到已有卷宗会话，跳转圣堂首页","ok");
+    location.href="index.html";
+  }
+}
+
+document.getElementById('btnLogin').onclick=async ()=>{
+  const email=document.getElementById('loginEmail').value.trim();
+  const pwd=document.getElementById('loginPwd').value.trim();
+  if(!email||!pwd){ showToast("请填写邮箱与卷宗密钥",true);return; }
+  log("发起登入卷宗请求");
+  const {data,error}=await supabase.auth.signInWithPassword({email,password:pwd});
+  if(error){ log("登入失败:"+error.message,"err"); showToast(error.message,true);return; }
+  log("登入成功，跳转圣堂首页","ok");
+  showToast("卷宗已开启");
+  setTimeout(()=>location.href="index.html",400);
+}
+
+document.getElementById('btnReg').onclick=async ()=>{
+  const email=document.getElementById('regEmail').value.trim();
+  const pwd=document.getElementById('regPwd').value.trim();
+  if(!email||!pwd){ showToast("邮箱和密钥不能为空",true);return; }
+  log("发起建立档案请求");
+  const {data,error}=await supabase.auth.signUp({email,password:pwd});
+  if(error){ log("注册失败:"+error.message,"err"); showToast(error.message,true);return; }
+  log("档案建立成功，请登录","ok");
+  showToast("档案创建完成，请登入卷宗");
+  document.getElementById('tabLogin').click();
+}
+
+(async function main(){
+  const ok=await initSdk();
+  if(!ok){ showToast("网络异常，SDK无法加载",true); return; }
+  await checkAlreadyLogin();
+})();
+</script>
+</body>
+</html>
